@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>KOHBEN TRAVEL AIRLINES GROUP</title>
+    
+    <!-- Google Fonts - League Spartan -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@100..900&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="ktg-logo">
+                    <img src="Photos/Logo.png" alt="Kohben Travel Airlines Logo" class="logo-img">
+                </div>
+                <h1>KOHBEN TRAVEL AIRLINES GROUP</h1>
+                <button id="toggleSidebar" class="sidebar-toggle-btn" title="Toggle Menu">
+                    <span id="toggleSidebarIcon">✕</span>
+                </button>
+            </div>
+            <p>Explore the world with this interactive map</p>
+        </header>
+        
+        <div class="main-content">
+            <!-- Quick Navigation Tabs (shown when in management menus) - Outside sidebar, positioned relative to main-content -->
+            <div id="quickNavTabs" class="quick-nav-tabs" style="display: none;">
+                <button class="nav-tab" data-menu="aircraftManagementMenuContent" title="Aircraft Management">
+                    <span class="nav-tab-text">Aircraft</span>
+                </button>
+                <button class="nav-tab" data-menu="airportsManagementMenuContent" title="Airports Management">
+                    <span class="nav-tab-text">Airports</span>
+                </button>
+                <button class="nav-tab" data-menu="routesManagementMenuContent" title="Routes Management">
+                    <span class="nav-tab-text">Routes</span>
+                </button>
+                <button class="nav-tab" data-menu="flightSearchMenuContent" title="Flight Search">
+                    <span class="nav-tab-text">Flight Search</span>
+                </button>
+            </div>
+            
+            <div class="sidebar">
+                <!-- Main Menu -->
+                <div id="mainMenu">
+                    <h3>Options</h3>
+                    <div class="option-section">
+                        <!-- Airport Search -->
+                        <div class="search-container" style="margin-bottom: 15px; position: relative;">
+                            <input type="text" id="airportSearchBox" placeholder="Search airports (name, code, city, country)" 
+                                   style="width: 100%; padding: 10px; border: 2px solid #A68A64; border-radius: 6px; font-size: 14px; background: #e6e6e9; color: #19363c;">
+                            <div id="searchResults" class="search-results" style="display: none; position: absolute; z-index: 1000; background: white; border: 1px solid #A68A64; border-radius: 6px; max-height: 200px; overflow-y: auto; width: 100%; margin-top: 2px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                                <!-- Search results will be populated here -->
+                            </div>
+                        </div>
+                        
+                        <button class="option-btn" id="aircraftManagementMenu">🛩️ Aircraft Management</button>
+                        <button class="option-btn" id="airportsManagementMenu">🏢 Airports Management</button>
+                        <button class="option-btn" id="routesManagementMenu">🗺️ Routes Management</button>
+                        <button class="option-btn" id="flightSearchMenu">✈️ Flight Search</button>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button class="option-btn" id="toggleAircraftAnimations" style="background: #4e8ca0;">✈️ Show Live Aircraft</button>
+                        </div>
+                        <div class="import-export-section" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #4e8ca0;">
+                            <h4 style="color: #e6e6e9; margin-bottom: 10px; font-size: 14px;">Data Management</h4>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="option-btn export-btn" id="exportData">📤 Export Data</button>
+                                <button class="option-btn import-btn" id="importData">📥 Import Data</button>
+                            </div>
+                            <input type="file" id="importFileInput" accept=".json" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Airports Management Menu (hidden by default) -->
+                <div id="airportsManagementMenuContent" style="display: none;">
+                    <div class="menu-header">
+                        <button class="back-btn" id="backToMainFromAirportsManagement">← Back</button>
+                        <h3>Airports Management</h3>
+                    </div>
+                    <div class="option-section">
+                        <button class="option-btn" id="addNewAirport">➕ Add New</button>
+                        
+                        <!-- Country Search -->
+                        <div class="search-container" style="margin-top: 15px;">
+                            <input type="text" id="countrySearchBox" placeholder="Search countries..." 
+                                   style="width: 100%; padding: 10px; border: 2px solid #A68A64; border-radius: 6px; font-size: 14px; background: #e6e6e9; color: #19363c;">
+                        </div>
+                        
+                        <!-- Airport Form (hidden by default) -->
+                        <div class="option-section" id="airportForm" style="display: none;">
+                            <h4>Add New Airport</h4>
+                            <form id="airportFormElement">
+                                <div class="form-group">
+                                    <label for="coordinates">Coordinates:</label>
+                                    <input type="text" id="coordinates" placeholder="8°30′00″N 77°16′28″W" required>
+                                    <small>Format: degrees°minutes′seconds″direction</small>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="country">Country:</label>
+                                    <input type="text" id="country" placeholder="United States" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="city">City:</label>
+                                    <input type="text" id="city" placeholder="New York" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="population">Population:</label>
+                                    <input type="number" id="population" placeholder="1000000" min="0">
+                                    <small>Enter the population around this airport</small>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="airportName">Airport Name:</label>
+                                    <input type="text" id="airportName" placeholder="John F. Kennedy International Airport" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="airportCode">Airport Code:</label>
+                                    <input type="text" id="airportCode" placeholder="JFK" maxlength="4" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="isInternational">
+                                        <span class="checkmark"></span>
+                                        International Airport
+                                    </label>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="openingTime">Opening Time:</label>
+                                        <input type="time" id="openingTime" required>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="closingTime">Closing Time:</label>
+                                        <input type="time" id="closingTime" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="timeZone">Time Zone:</label>
+                                        <input type="text" id="timeZone" placeholder="COT/GMT/BST" maxlength="10">
+                                        <small>Standard timezone abbreviation</small>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="timeDifference">Time Difference:</label>
+                                        <input type="text" id="timeDifference" placeholder="+5/-3" maxlength="4">
+                                        <small>Hours from UTC (e.g., +5, -3)</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="alternateTimeZone">Alternate Time Zone:</label>
+                                        <input type="text" id="alternateTimeZone" placeholder="CDT/EDT/BST" maxlength="10">
+                                        <small>Summer/daylight timezone (optional)</small>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="alternateTimeDifference">Alternate Time Difference:</label>
+                                        <input type="text" id="alternateTimeDifference" placeholder="+6/-2" maxlength="4">
+                                        <small>Hours from UTC during summer time</small>
+                                    </div>
+                                </div>
+                                
+                                
+                                <div class="form-group">
+                                    <label>Compatible Aircraft Types:</label>
+                                    <div id="aircraftCheckboxes" class="aircraft-checkboxes">
+                                        <!-- Aircraft checkboxes will be populated here -->
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Services:</label>
+                                    <div class="services-checkboxes">
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" id="waypointHotel">
+                                            <span class="checkmark"></span>
+                                            Waypoint Hotel
+                                        </label>
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" id="waypointLounge">
+                                            <span class="checkmark"></span>
+                                            Waypoint Lounge
+                                        </label>
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" id="cityBusTransfer">
+                                            <span class="checkmark"></span>
+                                            City Bus Transfer
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="airportNotes">Notes:</label>
+                                    <textarea id="airportNotes" rows="4" placeholder="Enter any additional notes about this airport..."></textarea>
+                                </div>
+                                
+                                <div class="form-buttons">
+                                    <button type="submit" class="option-btn">✅ Add Airport</button>
+                                    <button type="button" class="option-btn cancel-btn" id="cancelAirport">❌ Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <div id="countriesList" class="countries-list">
+                            <!-- Countries list will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Country Airports Menu (hidden by default) -->
+                <div id="countryAirportsContent" style="display: none;">
+                    <div class="menu-header">
+                        <button class="back-btn" id="backToCountries">← Back to Countries</button>
+                        <h3 id="countryTitle">Country Airports</h3>
+                    </div>
+                    <div class="option-section">
+                        <!-- Airport Code Search -->
+                        <div class="search-container" style="margin-bottom: 15px;">
+                            <input type="text" id="airportCodeSearchBox" placeholder="Search airports by 3-letter code (e.g., JFK, LAX)..." 
+                                   style="width: 100%; padding: 10px; border: 2px solid #A68A64; border-radius: 6px; font-size: 14px; background: #e6e6e9; color: #19363c;">
+                        </div>
+                        
+                        <div id="countryAirportsList" class="airports-list">
+                            <!-- Country airports list will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Airport Gates Menu (hidden by default) -->
+                <div id="airportGatesContent" style="display: none;">
+                    <div class="menu-header">
+                        <button class="back-btn" id="backToCountryAirports">← Back to Airports</button>
+                        <h3 id="airportGatesTitle">Airport Gates</h3>
+                    </div>
+                    <div class="option-section">
+                        <p class="gate-map-manage-hint">Gate pins appear on the map only while you manage gates for this airport. Drag a pin to fine-tune its position.</p>
+                        <button class="option-btn" id="addNewGate">🚪 Add New Gate</button>
+                        <div id="gatesList" class="gates-list">
+                            <!-- Gates list will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Gate Calendar Menu (hidden by default) -->
+                <div id="gateCalendarContent" style="display: none;">
+                    <div class="menu-header">
+                        <button class="back-btn" id="backToAirportGates">← Back to Gates</button>
+                        <h3 id="gateCalendarTitle">Gate Activity Log</h3>
+                    </div>
+                    <div class="option-section">
+                        <div id="gateCalendarInfo" class="gate-calendar-info">
+                            <!-- Gate information will be populated here -->
+                        </div>
+                        <div id="gateCalendar" class="gate-calendar">
+                            <!-- Gate calendar will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Aircraft Management Menu (hidden by default) -->
+                <div id="aircraftManagementMenuContent" style="display: none;">
+                    <div class="menu-header">
+                        <button class="back-btn" id="backToMainFromAircraftManagement">← Back</button>
+                        <h3>Aircraft Management</h3>
+                    </div>
+                    <div class="option-section">
+                        <button class="option-btn" id="aircraftTypesSubMenu">✈️ Aircraft Types</button>
+                        <button class="option-btn" id="airlinesSubMenu">🏢 Airlines</button>
+                    </div>
+                </div>
+                
+                <!-- Aircraft Types Submenu (hidden by default) -->
+                <div id="aircraftTypesSubMenuContent" style="display: none;">
+                    <div class="menu-header">
+                        <button class="back-btn" id="backToAircraftManagement">← Back to Aircraft Management</button>
+                        <h3>Aircraft Types</h3>
+                    </div>
+                    <div class="option-section">
+                        <button class="option-btn" id="addNewAircraft">➕ Add New</button>
+                        
+                        <!-- Aircraft Form (hidden by default) -->
+                        <div class="option-section" id="aircraftForm" style="display: none;">
+                            <h4>Add New Aircraft Type</h4>
+                            <form id="aircraftFormElement">
+                                <div class="form-group">
+                                    <label for="aircraftModel">Aircraft Model:</label>
+                                    <input type="text" id="aircraftModel" placeholder="Boeing 737" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="aircraftSpeed">Speed (km/h):</label>
+                                    <input type="number" id="aircraftSpeed" placeholder="900" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="aircraftRange">Max Range (km):</label>
+                                    <input type="number" id="aircraftRange" placeholder="5500" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="aircraftCapacity">Passenger capacity (seats):</label>
+                                    <input type="number" id="aircraftCapacity" placeholder="189" min="1" step="1" required>
+                                </div>
+                                
+                                <div class="form-buttons">
+                                    <button type="submit" class="option-btn">✅ Add Aircraft Type</button>
+                                    <button type="button" class="option-btn cancel-btn" id="cancelAircraft">❌ Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <div id="aircraftList" class="aircraft-list">
+                            <!-- Aircraft list will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                
+                <!-- Airlines Submenu (hidden by default) -->
+                <div id="airlinesSubMenuContent" style="display: none;">
+                    <div class="menu-header">
+                        <button class="back-btn" id="backToAircraftManagementFromAirlines">← Back to Aircraft Management</button>
+                        <h3>Airlines</h3>
+                    </div>
+                    <div class="option-section">
+                        <button class="option-btn" id="addNewAirline">➕ Add New</button>
+                        
+                        <!-- Airline Form (hidden by default) -->
+                        <div class="option-section" id="airlineForm" style="display: none;">
+                            <h4>Add New Airline</h4>
+                            <form id="airlineFormElement">
+                                <div class="form-group">
+                                    <label for="airlineName">Airline Name:</label>
+                                    <input type="text" id="airlineName" placeholder="American Airlines" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="airlineCode">Airline Code:</label>
+                                    <input type="text" id="airlineCode" placeholder="AA" maxlength="3" required>
+                                    <small>IATA 3-letter code (e.g., AA, DL, UA)</small>
+                                </div>
+                                
+                                <div class="form-buttons">
+                                    <button type="submit" class="option-btn">Add Airline</button>
+                                    <button type="button" class="option-btn cancel-btn" id="cancelAirline">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <div id="airlinesList" class="airlines-list">
+                            <!-- Airlines list will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Individual Airline Submenu (hidden by default) -->
+                <div id="individualAirlineSubMenuContent" style="display: none;">
+                    <div class="menu-header">
+                        <button class="back-btn" id="backToAirlinesFromIndividual">← Back to Airlines</button>
+                        <h3 id="individualAirlineTitle">Airline Details</h3>
+                    </div>
+                    <div class="option-section">
+                        <button class="option-btn" id="addAircraftToCurrentAirline">➕ Add Aircraft</button>
+                        <button class="option-btn" id="addPrefixToCurrentAirline">🏷️ Add Prefix</button>
+                        <button class="option-btn" id="editCurrentAirline">✏️ Edit Airline</button>
+                        <button class="option-btn" id="deleteCurrentAirline" style="background: #e74c3c;">🗑️ Delete Airline</button>
+                        
+                        <div id="individualAirlineInfo" class="airline-info">
+                            <!-- Airline information will be populated here -->
+                        </div>
+                        
+                        <div id="prefixFilterContainer" style="margin-bottom: 15px; display: none;">
+                            <label for="prefixFilter" style="display: block; margin-bottom: 5px; color: #19363c; font-weight: 500;">Filter by Prefix:</label>
+                            <select id="prefixFilter" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 14px; font-family: 'League Spartan', Arial, sans-serif;">
+                                <option value="">All Prefixes</option>
+                            </select>
+                        </div>
+                        
+                        <div id="individualAirlineAircraftList" class="airline-aircraft-list">
+                            <!-- Aircraft list will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Routes Management Menu (hidden by default) -->
+                <div id="routesManagementMenuContent" style="display: none;">
+                    <div class="menu-header">
+                        <button class="back-btn" id="backToMainFromRoutesManagement">← Back</button>
+                        <h3>Routes Management</h3>
+                    </div>
+                    <div class="option-section">
+                        <button class="option-btn" id="addNewRoute">➕ Add New</button>
+                        
+                        <!-- Route Form (hidden by default) -->
+                        <div class="option-section" id="routeForm" style="display: none;">
+                            <h4>Add New Route</h4>
+                            <form id="routeFormElement">
+                                <div class="form-group">
+                                    <label for="departureAirport">Departure Airport:</label>
+                                    <select id="departureAirport" required>
+                                        <option value="">Select departure airport</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group" id="departurePopulationDisplay" style="display: none;">
+                                    <label>Departure Airport Population:</label>
+                                    <div id="departurePopulationInfo" style="padding: 8px; background: #f0f0f0; border-radius: 4px; border: 1px solid #A68A64; color: #19363c;">
+                                        <span id="departurePopulationValue">0</span>
+                                        <small id="departurePopulationDetails" style="display: block; color: #666; margin-top: 2px;"></small>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="arrivalAirport">Arrival Airport:</label>
+                                    <select id="arrivalAirport" required>
+                                        <option value="">Select arrival airport</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="routeTypeFilter">Route Type:</label>
+                                    <select id="routeTypeFilter">
+                                        <option value="both" selected>Both</option>
+                                        <option value="domestic">Domestic (same country)</option>
+                                        <option value="international">International (different countries)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group" id="arrivalPopulationDisplay" style="display: none;">
+                                    <label>Arrival Airport Population:</label>
+                                    <div id="arrivalPopulationInfo" style="padding: 8px; background: #f0f0f0; border-radius: 4px; border: 1px solid #A68A64; color: #19363c;">
+                                        <span id="arrivalPopulationValue">0</span>
+                                        <small id="arrivalPopulationDetails" style="display: block; color: #666; margin-top: 2px;"></small>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group" id="routeFrequencyDisplay" style="display: none;">
+                                    <label>Weekly demand (direct O/D, A→B):</label>
+                                    <div id="routeFrequencyInfo" style="padding: 8px; background: #e8f5e9; border-radius: 4px; border: 1px solid #27ae60; color: #19363c;">
+                                        <span id="routeFrequencyValue" style="font-weight: bold; color: #27ae60; font-size: 16px;">-</span>
+                                        <small id="routeFrequencyDetails" style="display: block; color: #666; margin-top: 2px;"></small>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="isPositioningRoute">
+                                        <span class="checkmark"></span>
+                                        Positioning Route
+                                    </label>
+                                    <small>Check this box to create a positioning route. Positioning routes bypass international/domestic restrictions and are not shown in airport route networks.</small>
+                                </div>
+                                
+                                <div class="form-buttons">
+                                    <button type="submit" class="option-btn">Add Route</button>
+                                    <button type="button" class="option-btn cancel-btn" id="cancelRoute">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <div class="search-container" style="margin-top: 15px;">
+                            <input type="text" id="routeSearchBox" placeholder="Search by departure airport code (e.g., JFK)" 
+                                   style="width: 100%; padding: 8px; border: 2px solid #A68A64; border-radius: 6px; font-size: 14px; background: #e6e6e9; color: #19363c;">
+                        </div>
+                        <div id="routesList" class="routes-list">
+                            <!-- Routes list will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Flight Search Menu (hidden by default) -->
+                <div id="flightSearchMenuContent" style="display: none;">
+                    <div class="menu-header">
+                        <button class="back-btn" id="backToMainFromFlightSearch">← Back</button>
+                        <h3>Flight Search</h3>
+                    </div>
+                    <div class="option-section">
+                        <!-- Flight Search Form -->
+                        <div class="flight-search-form">
+                            <h4>Search for Flights</h4>
+                            <form id="flightSearchForm">
+                                <div class="form-group">
+                                    <label for="departureAirportSearch">Departure Airport:</label>
+                                    <div class="search-container" style="position: relative;">
+                                        <input type="text" id="departureAirportSearch" placeholder="Search by city name or airport code (e.g., New York, JFK)" 
+                                               style="width: 100%; padding: 10px; border: 2px solid #A68A64; border-radius: 6px; font-size: 14px; background: #e6e6e9; color: #19363c;" required>
+                                        <div id="departureSearchResults" class="search-results" style="display: none; position: absolute; z-index: 1000; background: white; border: 1px solid #A68A64; border-radius: 6px; max-height: 200px; overflow-y: auto; width: 100%; margin-top: 2px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                                            <!-- Search results will be populated here -->
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="arrivalAirportSearch">Arrival Airport:</label>
+                                    <div class="search-container" style="position: relative;">
+                                        <input type="text" id="arrivalAirportSearch" placeholder="Search by city name or airport code (e.g., Los Angeles, LAX)" 
+                                               style="width: 100%; padding: 10px; border: 2px solid #A68A64; border-radius: 6px; font-size: 14px; background: #e6e6e9; color: #19363c;" required>
+                                        <div id="arrivalSearchResults" class="search-results" style="display: none; position: absolute; z-index: 1000; background: white; border: 1px solid #A68A64; border-radius: 6px; max-height: 200px; overflow-y: auto; width: 100%; margin-top: 2px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                                            <!-- Search results will be populated here -->
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; color: #19363c; font-weight: 500;">
+                                        <input type="checkbox" id="showCancelledFlights" onchange="toggleCancelledFlightsDisplay()">
+                                        <span>Show Cancelled Flights</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; color: #19363c; font-weight: 500;">
+                                        <input type="checkbox" id="showLocalTimes" onchange="refreshFlightSearchResults()">
+                                        <span>Show Times in Local Time</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-buttons">
+                                    <button type="submit" class="option-btn">🔍 Search Flights</button>
+                                    <button type="button" class="option-btn cancel-btn" id="clearFlightSearch">🗑️ Clear</button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- Flight Search Results -->
+                        <div id="flightSearchResults" class="flight-search-results" style="display: none;">
+                            <h4>Available Flights</h4>
+                            <div id="flightResultsList" class="flight-results-list">
+                                <!-- Flight results will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                
+                <!-- Aircraft Schedule Menu (hidden by default) -->
+                <div id="aircraftScheduleContent" style="display: none;">
+                    <div class="menu-header">
+                        <button class="back-btn" id="backToRegisteredAircraft">← Back to Airlines</button>
+                        <h3 id="aircraftScheduleTitle">Aircraft Schedule</h3>
+                    </div>
+                    <div class="schedule-container">
+                        <div class="schedule-controls">
+                            <button class="option-btn" id="scheduleFlight">✈️ Schedule Flight</button>
+                            <button class="option-btn" id="blockGateBtn">🚫 Block Gate</button>
+                            <button class="option-btn" id="clearSchedule">🗑️ Clear All</button>
+                        </div>
+                        <div class="calendar-container">
+                            <div class="calendar-header">
+                                <div class="time-column">Time</div>
+                                <div class="day-column" data-day="0">Mon</div>
+                                <div class="day-column" data-day="1">Tue</div>
+                                <div class="day-column" data-day="2">Wed</div>
+                                <div class="day-column" data-day="3">Thu</div>
+                                <div class="day-column" data-day="4">Fri</div>
+                                <div class="day-column" data-day="5">Sat</div>
+                                <div class="day-column" data-day="6">Sun</div>
+                            </div>
+                            <div class="calendar-body" id="calendarBody">
+                                <!-- Calendar time slots will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                
+                
+                
+                
+                <!-- Gate Form (hidden by default) -->
+                <div class="option-section" id="gateForm" style="display: none;">
+                    <h4>Add New Gate</h4>
+                    <form id="gateFormElement">
+                        <div class="form-group">
+                            <label for="gateNumber">Gate Number:</label>
+                            <input type="text" id="gateNumber" placeholder="A12" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="gateTerminal">Terminal:</label>
+                            <input type="text" id="gateTerminal" placeholder="Terminal A" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Compatible Aircraft Types:</label>
+                            <div id="gateAircraftCheckboxes" class="aircraft-checkboxes">
+                                <!-- Aircraft checkboxes will be populated here -->
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Assigned Airlines:</label>
+                            <div id="gateAirlinesCheckboxes" class="aircraft-checkboxes">
+                                <!-- Airlines checkboxes will be populated here -->
+                            </div>
+                        </div>
+
+                        <div class="form-group" id="gateLocationGroup">
+                            <label>Map location:</label>
+                            <input type="hidden" id="gateLat" value="">
+                            <input type="hidden" id="gateLng" value="">
+                            <p id="gatePinLocationDisplay" class="gate-pin-location-display">Not placed on map</p>
+                            <div class="gate-pin-form-actions">
+                                <button type="button" class="option-btn" id="setGateOnMapBtn">📍 Set on map</button>
+                                <button type="button" class="option-btn cancel-btn" id="clearGateMapLocationBtn">Clear location</button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-buttons">
+                            <button type="submit" class="option-btn">Add Gate</button>
+                            <button type="button" class="option-btn cancel-btn" id="cancelGate">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+                
+                
+                
+                <!-- Flight Scheduling Form (hidden by default) -->
+                <div class="option-section" id="flightSchedulingForm" style="display: none;">
+                    <h4>Schedule New Flight</h4>
+                    <form id="flightSchedulingFormElement">
+                        <div class="form-group">
+                            <label for="flightDay">Day:</label>
+                            <select id="flightDay" required>
+                                <option value="">Select day</option>
+                                <option value="0">Monday</option>
+                                <option value="1">Tuesday</option>
+                                <option value="2">Wednesday</option>
+                                <option value="3">Thursday</option>
+                                <option value="4">Friday</option>
+                                <option value="5">Saturday</option>
+                                <option value="6">Sunday</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="flightRoute">Route:</label>
+                            <select id="flightRoute" required>
+                                <option value="">Select route</option>
+                            </select>
+                            <button type="button" id="switchRouteDirection" class="option-btn" style="margin-top: 5px; padding: 4px 8px; font-size: 11px;">Show Completed Routes</button>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="flightNumber">Flight Number:</label>
+                            <input type="text" id="flightNumber" placeholder="Enter number (e.g., 1, 12, 123, 1234) or leave blank for auto" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="flightStartTime">Departure Time (UTC):</label>
+                            <input type="time" id="flightStartTime" step="300" required>
+                            <small id="departureLocalTimeHint" style="display: block; margin-top: 4px; color: #666;"></small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="boardingTime">Boarding Time (minutes):</label>
+                            <input type="number" id="boardingTime" min="5" max="120" value="30" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="flightDuration">Flight Duration (HH:MM):</label>
+                            <input type="time" id="flightDuration" step="300" value="01:00" required>
+                            <small id="arrivalLocalTimeHint" style="display: block; margin-top: 4px; color: #666;"></small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="disembarkingTime">Disembarking Time (minutes):</label>
+                            <input type="number" id="disembarkingTime" min="5" max="60" value="15" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="departureGate">Departure Gate:</label>
+                            <select id="departureGate" required>
+                                <option value="">Select departure gate</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="arrivalGate">Arrival Gate:</label>
+                            <select id="arrivalGate" required>
+                                <option value="">Select arrival gate</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="autoGateBlocks">
+                                <span class="checkmark"></span>
+                                Enable Auto Gate Blocks
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="isPositioningFlight">
+                                <span class="checkmark"></span>
+                                Positioning Flight
+                            </label>
+                        </div>
+                        
+                        <div class="form-buttons">
+                            <button type="submit" class="option-btn">✈️ Schedule Flight</button>
+                            <button type="button" class="option-btn" id="checkConflictsBtn" style="background-color: #17a2b8; color: white;">🔍 Check for Conflicts</button>
+                            <button type="button" class="option-btn cancel-btn" id="cancelFlightScheduling">❌ Cancel</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Gate Blocking Form (hidden by default) -->
+                <div class="option-section" id="gateBlockingForm" style="display: none;">
+                    <h4>Block Gate</h4>
+                    <form id="gateBlockingFormElement">
+                        <div class="form-group">
+                            <label for="blockDay">Day:</label>
+                            <select id="blockDay" required>
+                                <option value="">Select day</option>
+                                <option value="0">Monday</option>
+                                <option value="1">Tuesday</option>
+                                <option value="2">Wednesday</option>
+                                <option value="3">Thursday</option>
+                                <option value="4">Friday</option>
+                                <option value="5">Saturday</option>
+                                <option value="6">Sunday</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="blockAirport">Airport:</label>
+                            <select id="blockAirport" required>
+                                <option value="">Select airport</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="blockGate">Gate:</label>
+                            <select id="blockGate" required>
+                                <option value="">Select gate</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="blockStartTime">Start Time:</label>
+                            <input type="time" id="blockStartTime" step="300" required>
+                            <small>5-minute increments</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="blockEndTime">End Time:</label>
+                            <input type="time" id="blockEndTime" step="300" required>
+                            <small>5-minute increments</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="blockReason">Reason:</label>
+                            <input type="text" id="blockReason" placeholder="Maintenance, Construction, etc." required>
+                        </div>
+                        
+                        <div class="form-buttons">
+                            <button type="submit" class="option-btn">🚫 Block Gate</button>
+                            <button type="button" class="option-btn" id="checkGateBlockConflictsBtn" style="background-color: #17a2b8; color: white;">🔍 Check for Conflicts</button>
+                            <button type="button" class="option-btn cancel-btn" id="cancelGateBlocking">❌ Cancel</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Aircraft Selection Modal for Range (hidden by default) -->
+                <div class="option-section" id="aircraftSelectionModal" style="display: none;">
+                    <h4>Select Aircraft for Range</h4>
+                    <div class="form-group">
+                        <label>Choose an aircraft to show its range from <span id="selectedAirportName"></span>:</label>
+                        <div id="aircraftSelectionList" class="aircraft-selection-list">
+                            <!-- Aircraft selection list will be populated here -->
+                        </div>
+                    </div>
+                    <div class="form-buttons">
+                        <button type="button" class="option-btn cancel-btn" id="cancelAircraftSelection">Cancel</button>
+                    </div>
+                </div>
+                
+                <!-- Population Update Modal (hidden by default) -->
+                <div class="option-section" id="populationUpdateModal" style="display: none;">
+                    <h4>Update Population Data</h4>
+                    <div class="form-group">
+                        <label for="updatePopulation">Population for <span id="updateAirportName"></span>:</label>
+                        <input type="number" id="updatePopulation" placeholder="1000000" min="0">
+                        <small>Enter the population around this airport</small>
+                    </div>
+                    
+                    <div class="form-buttons">
+                        <button type="button" class="option-btn" id="savePopulationUpdate">Save Population Data</button>
+                        <button type="button" class="option-btn cancel-btn" id="cancelPopulationUpdate">Cancel</button>
+                    </div>
+                </div>
+                
+                <!-- Schedule Item Details Modal -->
+                <div class="option-section" id="scheduleItemDetailsModal" style="display: none;">
+                    <h4>Schedule Item Details</h4>
+                    <div id="scheduleItemDetailsContent">
+                        <!-- Details will be populated here -->
+                    </div>
+                    
+                    <div class="form-buttons">
+                        <button type="button" class="option-btn delete-btn" id="deleteScheduleItemBtn">Delete Item</button>
+                        <button type="button" class="option-btn cancel-btn" id="closeScheduleItemModal">Close</button>
+                    </div>
+                </div>
+
+                <div id="gatePinToolbar" class="route-draw-toolbar gate-pin-toolbar sidebar-draw-overlay" style="display: none;" aria-live="polite">
+                    <div class="route-draw-toolbar-header">
+                        <strong id="gatePinToolbarTitle">Pin gate on map</strong>
+                        <span id="gatePinToolbarGate" class="route-draw-toolbar-codes"></span>
+                    </div>
+                    <p class="route-draw-hint">Click the map to place this gate. Existing pins can be dragged to adjust. <strong>Right-click and drag</strong> on the map to pan.</p>
+                    <div class="route-draw-actions">
+                        <button type="button" class="option-btn cancel-btn" id="cancelGatePinBtn">Cancel pinning</button>
+                    </div>
+                </div>
+
+                <div id="runwayDrawToolbar" class="route-draw-toolbar runway-draw-toolbar sidebar-draw-overlay" style="display: none;" aria-live="polite">
+                    <div class="route-draw-toolbar-header">
+                        <strong id="runwayDrawToolbarTitle">Draw airport runways</strong>
+                        <span id="runwayDrawToolbarCodes" class="route-draw-toolbar-codes"></span>
+                    </div>
+                    <div class="runway-draw-mode-tabs">
+                        <button type="button" id="runwayDrawModeRunwaysBtn" class="runway-draw-mode-tab active" onclick="setRunwayDrawMode('runway')">Runways</button>
+                        <button type="button" id="runwayDrawModePathsBtn" class="runway-draw-mode-tab" onclick="setRunwayDrawMode('path')">Paths</button>
+                    </div>
+                    <p id="runwayDrawStatus" class="route-draw-hint">Click the first end of a runway, then click the opposite end. Names are generated from runway heading (e.g. 09/27). <strong>Right-click and drag</strong> on the map to pan.</p>
+                    <div id="runwayDrawRunwaysPanel">
+                        <div class="route-draw-stats">
+                            <span class="route-draw-stat" id="runwayDrawCount">0 runways</span>
+                        </div>
+                        <ul id="runwayDrawList" class="runway-draw-list"></ul>
+                    </div>
+                    <div id="runwayDrawPathsPanel" class="runway-draw-paths-panel" style="display: none;">
+                        <div class="runway-path-selectors">
+                            <label>Runway
+                                <select id="runwayPathRunwaySelect" onchange="onRunwayPathTargetChange()"></select>
+                            </label>
+                            <label>Runway in use
+                                <select id="runwayPathDesignatorSelect" onchange="onRunwayPathTargetChange()"></select>
+                            </label>
+                            <label>Path
+                                <select id="runwayPathKindSelect" onchange="onRunwayPathTargetChange()">
+                                    <option value="arrival">Arrival</option>
+                                    <option value="departure">Departure</option>
+                                </select>
+                            </label>
+                            <label class="runway-path-variant-controls">Variant
+                                <select id="runwayPathVariantSelect" onchange="onRunwayPathVariantChange()"></select>
+                            </label>
+                            <label class="runway-path-variant-controls runway-path-direction-controls">Traffic direction
+                                <select id="runwayPathDirectionSelect" onchange="onRunwayPathDirectionChange()"></select>
+                            </label>
+                        </div>
+                        <div class="runway-path-variant-actions">
+                            <button type="button" class="action-btn runway-path-add-variant-only" onclick="addNewRunwayPathVariant()">+ Add directional variant</button>
+                            <button type="button" class="action-btn delete-btn runway-path-variant-controls" onclick="deleteCurrentRunwayPathVariant()">Delete variant</button>
+                        </div>
+                        <p id="runwayPathDrawHint" class="route-draw-hint"></p>
+                        <span class="route-draw-stat" id="runwayPathWaypointCount">0 waypoints</span>
+                    </div>
+                    <div class="route-draw-actions runway-draw-sidebar-actions">
+                        <button type="button" id="runwayDrawUndoBtn" class="action-btn" onclick="undoRunwayDrawAction()">Undo</button>
+                        <button type="button" id="runwayPathFinishThresholdBtn" class="action-btn focus-btn" style="display: none;" onclick="finishRunwayPathAtThreshold()">Finish at threshold</button>
+                        <button type="button" id="runwayPathClearBtn" class="action-btn" style="display: none;" onclick="clearCurrentRunwayPath()">Clear path</button>
+                        <button type="button" class="action-btn edit-btn" onclick="saveRunwayDrawing()">Save</button>
+                        <button type="button" class="action-btn delete-btn" onclick="cancelRunwayDrawing()">Cancel</button>
+                    </div>
+                </div>
+                
+                
+            </div>
+            
+            <div class="map-container">
+                <div id="map"></div>
+                <!-- Map Controls - Always Visible at bottom of map -->
+                <div class="map-controls">
+                    <!-- Routes and airports are hidden by default and shown only on interaction -->
+                </div>
+            </div>
+        </div>
+        
+        <footer class="main-footer">
+            <div class="footer-links">
+                <button id="toggleAirports" class="toggle-airports-btn" onclick="toggleAirportsVisibility()" title="Toggle airport visibility">Show Airports</button>
+                <button id="toggleDayNight" class="toggle-airports-btn" onclick="toggleDayNightVisibility()" title="Toggle day/night overlay">Show Day/Night</button>
+                <a href="https://dispatch.simbrief.com/options/new" target="_blank" rel="noopener noreferrer">SimBrief</a>
+                <a href="https://www.ifatc.org/gates?code=SKCL" target="_blank" rel="noopener noreferrer">IFATC</a>
+                <a href="https://earth.google.com/web/" target="_blank" rel="noopener noreferrer">Google Earth</a>
+                <a href="https://acukwik.com/" target="_blank" rel="noopener noreferrer">Acukiwk</a>
+            </div>
+        </footer>
+        
+    </div>
+    
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    
+    <!-- Custom JavaScript -->
+        <script src="script.js?v=202610151600"></script>
+        <script src="weather-delay-sim.js?v=2026042201"></script>
+</body>
+</html>
